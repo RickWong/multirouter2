@@ -9,36 +9,23 @@
 	<script type="text/jsx">
 		/** @jsx React.DOM **/
 
-		var Routes2 = {
-			modal: Multirouter.createRoute("modal")
-		};
 		var Routes = {
 			settings: Multirouter.createRoute("settings"),
-			modal: Multirouter.createRoute("modal")
+			modal:    Multirouter.createRoute("modal")
 		};
-
-		var multirouter2 = Multirouter.createStore({
-			root: location.origin + location.pathname,
-			compatible: true,
-			upgrade: false,
-			routes: Routes2
-		});
 
 		var multirouter = Multirouter.createStore({
 			root: location.origin + location.pathname,
 			compatible: true,
-			upgrade: false,
-			routes: Routes
+			upgrade:    false,
+			routes:     Routes
 		});
 
-		// TODO: fix multiple stores
-		multirouter2.listen(function (routes) {
-			console.log("2", JSON.stringify(routes), "-->", multirouter.toString());
-		});
+		var routeChanged = function (routes) {
+			console.log("Global handler: ", JSON.stringify(routes), "-->", multirouter.toString());
+		};
 
-		multirouter.listen(function (routes) {
-			console.log("1", JSON.stringify(routes), "-->", multirouter.toString());
-		});
+		multirouter.listen(routeChanged);
 
 		Routes.settings(true);
 		Routes.settings(false);
@@ -47,8 +34,10 @@
 		Routes.modal("company");
 		Routes.modal(undefined);
 
+		multirouter.unlisten(routeChanged);
+
 		var App = React.createClass({
-			mixins: [Reflux.ListenerMixin],
+			mixins:             [Reflux.ListenerMixin],
 			componentWillMount: function () {
 				this.listenTo(multirouter, this.onRouteChange, this.onRouteChange);
 
@@ -56,10 +45,10 @@
 				foo.listenTo(multirouter)
 				foo()
 			},
-			onRouteChange: function (routes) {
-//				console.log("routes changed: ", JSON.stringify(routes), "-->", multirouter.toString());
+			onRouteChange:      function (routes) {
+				console.log("React handler: ", JSON.stringify(routes), "-->", multirouter.toString());
 			},
-			render: function () {
+			render:             function () {
 				return <b>Welcome to Multirouter</b>;
 			}
 		});

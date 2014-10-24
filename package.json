@@ -1,7 +1,7 @@
 {
   "name": "multirouter",
   "version": "2.0.0",
-  "description": "Router for single page applicationd with support for multiple routes simultaneously",
+  "description": "Router for single page applications with support for multiple routes simultaneously",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
