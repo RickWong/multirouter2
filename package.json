@@ -1,0 +1,25 @@
+{
+  "name": "multirouter",
+  "version": "2.0.0",
+  "description": "Router for single page applicationd with support for multiple routes simultaneously",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "router",
+    "multirouter",
+    "multiple",
+    "routes"
+  ],
+  "author": "Rick Wong",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "browserify": "~6.1.0",
+    "coffeeify": "~0.7.0",
+    "gulp": "~3.8.8",
+    "watchify": "~2.0.0",
+    "coffee-script": "~1.8.0",
+    "vinyl-source-stream": "~1.0.0"
+  }
+}
