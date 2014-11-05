@@ -18,13 +18,15 @@ module.exports = new (Multirouter = (function() {
     return Utils.createFunctor(Route.prototype, options);
   };
 
+  Multirouter.prototype.components = require("./components");
+
   return Multirouter;
 
 })());
 
 
 
-},{"./Route":2,"./Store":3,"./Utils":4}],2:[function(require,module,exports){
+},{"./Route":2,"./Store":3,"./Utils":4,"./components":7}],2:[function(require,module,exports){
 var GUID, Route;
 
 GUID = 20001;
@@ -118,7 +120,7 @@ module.exports = Store = (function() {
     this.sync = this.options.sync != null ? this.options.sync : true;
     this.routes = {};
     this.callbacks = [];
-    this.options = Utils.overwrite({
+    this.options = Utils.extend({
       compatible: null,
       upgrade: true,
       downgrade: true,
@@ -127,7 +129,7 @@ module.exports = Store = (function() {
       root: "",
       routePrefix: "/",
       routeSuffix: ":",
-      paramPrefix: ";",
+      paramPrefix: ":",
       historyFn: null,
       replace: false,
       push: false,
@@ -214,7 +216,12 @@ module.exports = Store = (function() {
     return this.trigger(this.routes);
   };
 
-  Store.prototype.preview = function(route, params) {};
+  Store.prototype.link = function(route, params) {
+    var routes;
+    routes = Utils.extend({}, this.routes);
+    routes[route.options.route] = params;
+    return this.toString(routes);
+  };
 
   Store.prototype.trigger = function(routes) {
     var callback, _i, _len, _ref, _results;
@@ -268,17 +275,18 @@ module.exports = Store = (function() {
     return _results;
   };
 
-  Store.prototype.toString = function() {
+  Store.prototype.toString = function(routes) {
     var name, route, segments, sortedRoutes, _i, _len;
-    if (!this.routes) {
+    routes || (routes = this.routes);
+    if (!routes) {
       return "";
     }
     segments = "";
     sortedRoutes = [];
-    for (name in this.routes) {
+    for (name in routes) {
       sortedRoutes.push({
         name: name,
-        params: this.routes[name]
+        params: routes[name]
       });
     }
     sortedRoutes.sort(function(a, b) {
@@ -296,7 +304,7 @@ module.exports = Store = (function() {
         }
       }
     }
-    return segments;
+    return this.options.root + segments;
   };
 
   return Store;
@@ -313,7 +321,7 @@ GUID = 10001;
 module.exports = new (Utils = (function() {
   function Utils() {}
 
-  Utils.prototype.overwrite = function(object) {
+  Utils.prototype.extend = function(object) {
     var key, source, sources, _i, _len;
     sources = Array.prototype.slice.call(arguments, 0);
     for (_i = 0, _len = sources.length; _i < _len; _i++) {
@@ -330,11 +338,39 @@ module.exports = new (Utils = (function() {
     functor = function() {
       return functor[functor.sync ? "trigger" : "triggerAsync"].apply(functor, arguments);
     };
-    this.overwrite(functor, prototype, {
+    this.extend(functor, prototype, {
       multirouterGuid: GUID++
     });
     prototype.constructor.call(functor, options);
     return functor;
+  };
+
+  Utils.prototype.shallowEqual = function(objA, objB) {
+    var key;
+    if (objA === objB) {
+      return true;
+    }
+    for (key in objA) {
+      if (!objB.hasOwnProperty(key) || objA[key] !== objB[key]) {
+        return false;
+      }
+    }
+    for (key in objB) {
+      if (!objA.hasOwnProperty(key)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  Utils.prototype.result = function(callbackOrValue, nothing) {
+    if (nothing == null) {
+      nothing = null;
+    }
+    if (typeof callbackOrValue === "function") {
+      callbackOrValue = callbackOrValue();
+    }
+    return callbackOrValue || nothing;
   };
 
   return Utils;
@@ -343,5 +379,111 @@ module.exports = new (Utils = (function() {
 
 
 
-},{}]},{},[1])(1)
+},{}],5:[function(require,module,exports){
+var Utils;
+
+Utils = require("../Utils");
+
+module.exports = function(Components) {
+  return Components.Link = React.createClass({
+    displayName: "Link",
+    propTypes: {
+      route: React.PropTypes.func,
+      store: React.PropTypes.func
+    },
+    getInitialState: function() {
+      return {
+        link: this.props.store.link(this.props.route, +(new Date))
+      };
+    },
+    componentWillMount: function() {
+      return this.props.store.listen(this.onRefresh);
+    },
+    componentWillUnmount: function() {
+      return this.props.store.unlisten(this.onRefresh);
+    },
+    onRefresh: function(routes) {
+      return this.setState(this.getInitialState());
+    },
+    onClick: function(event) {
+      event.preventDefault();
+      return this.props.route(this.props.params != null ? this.props.params : true);
+    },
+    shouldComponentUpdate: function(nextProps, nextState) {
+      return !Utils.shallowEqual(this.state, nextState) || !Utils.shallowEqual(this.props, nextProps);
+    },
+    render: function() {
+      return React.DOM.a({
+        className: "multirouter-link",
+        href: this.state.link,
+        onClick: this.onClick
+      }, this.props.children);
+    }
+  });
+};
+
+
+
+},{"../Utils":4}],6:[function(require,module,exports){
+var Utils;
+
+Utils = require("../Utils");
+
+module.exports = function(Components) {
+  return Components.Viewport = React.createClass({
+    displayName: "Viewport",
+    propTypes: {
+      route: React.PropTypes.func,
+      store: React.PropTypes.func,
+      onActive: React.PropTypes.func
+    },
+    getInitialState: function() {
+      var active, params, _ref;
+      params = this.props.params;
+      if (params === null || params === false || params === void 0) {
+        active = false;
+      } else if (params === true) {
+        active = true;
+      } else {
+        active = Utils.shallowEqual((_ref = this.props.store.routes) != null ? _ref[this.props.route.options.route] : void 0, params instanceof Array && params || [params]);
+      }
+      return {
+        active: active
+      };
+    },
+    componentWillMount: function() {
+      if (this.props.children) {
+        throw "Multirouter Viewport ignored all of its children.";
+      }
+      return this.props.store.listen(this.onRefresh);
+    },
+    componentWillUnmount: function() {
+      return this.props.store.unlisten(this.onRefresh);
+    },
+    onRefresh: function(routes) {
+      return this.setState(this.getInitialState());
+    },
+    render: function() {
+      var result;
+      result = Utils.result(this.state.active ? this.props.onActive : this.props.onInactive);
+      if (!React.isValidComponent(result)) {
+        result = React.DOM.div({
+          className: "multirouter-viewport"
+        }, result);
+      }
+      return result;
+    }
+  });
+};
+
+
+
+},{"../Utils":4}],7:[function(require,module,exports){
+require("./Link")(module.exports);
+
+require("./Viewport")(module.exports);
+
+
+
+},{"./Link":5,"./Viewport":6}]},{},[1])(1)
 });
