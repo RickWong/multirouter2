@@ -9,23 +9,36 @@
 	<script type="text/jsx">
 		/** @jsx React.DOM **/
 
+		var Routes2 = {
+			modal: Multirouter.createRoute("modal")
+		};
 		var Routes = {
 			settings: Multirouter.createRoute("settings"),
-			modal:    Multirouter.createRoute("modal")
+			modal: Multirouter.createRoute("modal")
 		};
+
+		var multirouter2 = Multirouter.createStore({
+			root: location.origin + location.pathname,
+			compatible: true,
+			upgrade: false,
+			routes: Routes2
+		});
 
 		var multirouter = Multirouter.createStore({
 			root: location.origin + location.pathname,
 			compatible: true,
-			upgrade:    false,
-			routes:     Routes
+			upgrade: false,
+			routes: Routes
 		});
 
-		var routeChanged = function (routes) {
-			console.log("Global handler: ", JSON.stringify(routes), "-->", multirouter.toString());
-		};
+		// TODO: fix multiple stores
+		multirouter2.listen(function (routes) {
+			console.log("Other router", JSON.stringify(routes), "-->", multirouter.toString());
+		});
 
-		multirouter.listen(routeChanged);
+		multirouter.listen(function (routes) {
+			console.log("Global -->", multirouter.toString());
+		});
 
 		Routes.settings(true);
 		Routes.settings(false);
@@ -34,22 +47,26 @@
 		Routes.modal("company");
 		Routes.modal(undefined);
 
-		multirouter.unlisten(routeChanged);
-
 		var App = React.createClass({
-			mixins:             [Reflux.ListenerMixin],
+			mixins: [Reflux.ListenerMixin],
 			componentWillMount: function () {
 				this.listenTo(multirouter, this.onRouteChange, this.onRouteChange);
-
-				window.foo = Multirouter.createRoute("foo")
-				foo.listenTo(multirouter)
-				foo()
 			},
-			onRouteChange:      function (routes) {
-				console.log("React handler: ", JSON.stringify(routes), "-->", multirouter.toString());
+			onRouteChange: function (routes) {
+				console.log("Component -->", multirouter.toString());
 			},
-			render:             function () {
-				return <b>Welcome to Multirouter</b>;
+			onRenderView: function () {
+				return <div>Settings is ABC</div>;
+			},
+			render: function () {
+				return <section>
+					<b>Welcome to Multirouter</b>
+					<Multirouter.components.Link store={ multirouter } route={ Routes.settings } params={ "abc" }>
+						Link
+					</Multirouter.components.Link>
+					<Multirouter.components.Viewport store={ multirouter } route={ Routes.settings } params={ "abc" }
+						onActive={ this.onRenderView } onInactive={ "empty" } />
+				</section>;
 			}
 		});
 

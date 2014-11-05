@@ -14,3 +14,4 @@ module.exports = new class Multirouter
 		Utils.createFunctor(Route.prototype, options)
 
 
+	components: require("./components")

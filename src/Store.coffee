@@ -11,7 +11,7 @@ module.exports = class Store
 		@sync = if @options.sync? then @options.sync else true
 		@routes = {}
 		@callbacks = []
-		@options = Utils.overwrite({
+		@options = Utils.extend({
 			compatible:  null,
 			upgrade:     true,
 			downgrade:   true,
@@ -20,7 +20,7 @@ module.exports = class Store
 			root:        "",
 			routePrefix: "/",
 			routeSuffix: ":",
-			paramPrefix: ";",
+			paramPrefix: ":",
 			historyFn:   null,
 			replace:     false,
 			push:        false,
@@ -99,9 +99,10 @@ module.exports = class Store
 		@trigger(@routes)
 
 
-	# TODO: implement
-	preview: (route, params) ->
-
+	link: (route, params) ->
+		routes = Utils.extend({}, @routes)
+		routes[route.options.route] = params
+		@toString(routes)
 
 	# TODO: abstract
 	trigger: (routes) ->
@@ -142,13 +143,14 @@ module.exports = class Store
 			@options.routes[i].apply(@options.routes[i], params)
 
 
-	toString: () ->
-		return "" if !@routes
+	toString: (routes) ->
+		routes ||= @routes
+		return "" if !routes
 		segments = "";
 		sortedRoutes = [];
 
-		for name of @routes
-			sortedRoutes.push({name: name, params: @routes[name]})
+		for name of routes
+			sortedRoutes.push({name: name, params: routes[name]})
 
 		sortedRoutes.sort((a, b) -> 0);
 
@@ -163,4 +165,4 @@ module.exports = class Store
 				else
 					segments += route.params
 
-		segments
+		@options.root + segments
